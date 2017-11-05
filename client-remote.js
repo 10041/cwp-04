@@ -38,8 +38,28 @@ client.on('data', data => {
             inputPath, 
             destPath, 
             fileName: path.basename(inputPath)
-        }))
+        }));
         console.log('COPY sented');
+    }
+    else if(data === "Copy Success"){
+        console.log("copy Success");
+        client.write(JSON.stringify({
+            inputPath, 
+            destPath, 
+            fileName: path.basename(inputPath),
+            key
+        }));
+        console.log('ENCODE sented');
+    }
+    else if(data === "Encode Success"){
+        console.log("copy Success");
+        client.write(JSON.stringify({
+            inputPath, 
+            destPath, 
+            fileName: path.basename(inputPath),
+            key
+        }));
+        console.log('DECODE sented');
     }
     else if (data === "File saved") {
         sendFiles();

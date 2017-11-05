@@ -20,7 +20,8 @@ const server = net.createServer(client => {
     let isQA = false;
     let isFILES = false;
     let isCOPY = false;
-
+    let isENCODE = false;
+    let isDECODE = false;
     sockets.push(client);
     client.setEncoding('utf8');
 
@@ -42,9 +43,43 @@ const server = net.createServer(client => {
       }
       else if(isCOPY){
         let parseData = JSON.parse(data);
-        if (!fs.existsSync(newPath)) fs.mkdirSync(newPath);
+        let newPath = `${parseData.destPath}//${parseData.fileName}`;
+        if (!fs.existsSync(parseData.destPath)) fs.mkdirSync(parseData.destPath);
+        let readStream = fs.createReadStream(parseData.inputPath);
+        readStream.pipe(fs.createWriteStream(newPath));
+        console.log(`Client ${client.id} copy ${parseData.fileName}`);
+        isCOPY = false;
+        isENCODE = true;
+        client.write("Copy Success");
+      }
+      else if(isENCODE){
+        let parseData = JSON.parse(data);
+        let fileExt = path.extname(parseData.fileName);
+        let fileWithoutExt = path.basename(parseData.fileName, path.extname(parseData.fileName));
+        let newPathWithFileName = `${parseData.destPath}//${fileWithoutExt}_encode${fileExt}`;
+        if (!fs.existsSync(parseData.destPath)) fs.mkdirSync(parseData.destPath);
+    
+        let readStream = fs.createReadStream(parseData.inputPath);
+        let writeStream = fs.createWriteStream(newPathWithFileName);
+        let cryptStream = Crypto.createCipher("aes192", key);
+        readStream.pipe(cryptStream).pipe(writeStream);
+        isENCODE = false;
+        isDECODE = true;
+        client.write("Encode Success");
+      }
+      else if(isDECODE){
+        let parseData = JSON.parse(data);
+        let fileExt = path.extname(parseData.fileName);
+        let fileWithoutExt = path.basename(parseData.fileName, path.extname(parseData.fileName));
+        let newPathWithFileName = `${parseData.destPath}//${fileWithoutExt}_decode${fileExt}`;
+        if (!fs.existsSync(parseData.destPath)) fs.mkdirSync(parseData.destPath);
+    
         let readStream = fs.createReadStream(originalPath);
-        readStream.pipe(fs.createWriteStream(parseData.destPath));
+        let writeStream = fs.createWriteStream(newPathWithFileName);
+        let cryptStream = Crypto.createDecipher("aes192", key);
+        readStream.pipe(cryptStream).pipe(writeStream);
+        isDECODE = false;
+        client.write("Decode Success");
         client.write(qa.dec);
       }
       else if(isFILES){
@@ -54,7 +89,6 @@ const server = net.createServer(client => {
           info.pop();
           let buffer = Buffer.from(info[0], 'base64');
           let FileName = info[1].substring(1, info[1].length);
-          //FileName.splice(FileName.indexOf(","), 1);
           fs.writeFile("./DirForFile" + path.sep + client.id + path.sep + FileName, buffer.toString(), function () {
               info = [];
               files[client.id] = [];
