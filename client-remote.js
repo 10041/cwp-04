@@ -29,12 +29,16 @@ else if(stat.isDirectory()){
 
 client.connect(port, function() {
     console.log('Connected');
-    client.write(qa.copy);
+    client.write(JSON.stringify({
+        type: qa.copy,
+    }));
+    //client.write(qa.copy);
 });
 
 client.on('data', data => {
     if(data === qa.ask){
         client.write(JSON.stringify({
+            type: qa.copyStart,
             inputPath, 
             destPath, 
             fileName: path.basename(inputPath)
@@ -44,6 +48,7 @@ client.on('data', data => {
     else if(data === "Copy Success"){
         console.log("copy Success");
         client.write(JSON.stringify({
+            type: qa.encodeStart,
             inputPath, 
             destPath, 
             fileName: path.basename(inputPath),
@@ -54,15 +59,13 @@ client.on('data', data => {
     else if(data === "Encode Success"){
         console.log("copy Success");
         client.write(JSON.stringify({
+            type: qa.decodeStart,
             inputPath, 
             destPath, 
             fileName: path.basename(inputPath),
             key
         }));
         console.log('DECODE sented');
-    }
-    else if (data === "File saved") {
-        sendFiles();
     }
     else if(data === qa.dec){
         console.log("Server refused");
